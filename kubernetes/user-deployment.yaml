@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      initContainers:
+        - name: init-user-db
+          image: postgres:15
+          command: ['sh', '-c', 'psql -h postgres-0.postgres -U user -d appdb -f /docker-entrypoint-initdb.d/init.sql']
+          env:
+            - name: PGPASSWORD
+              value: "password"
+          volumeMounts:
+            - name: schema-volume
+              mountPath: /docker-entrypoint-initdb.d
+      containers:
+        - name: user-service
+          image: ksshr/user-service
+          ports:
+            - containerPort: 5001
+          env:
+            - name: REDIS_HOST
+              value: "redis-0.redis"
+            - name: DB_HOST
+              value: "postgres-0.postgres"
+            - name: DB_USER
+              value: "user"
+            - name: DB_PASSWORD
+              value: "password"
+            - name: DB_NAME
+              value: "appdb"
+      volumes:
+        - name: schema-volume
+          configMap:
+            name: user-schema
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 80
+      targetPort: 5001

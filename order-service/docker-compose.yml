@@ -1,0 +1,31 @@
+version: "2"
+
+services:
+  order-service:
+    build: .
+    container_name: order_container
+    ports:
+      - "5002:5002"
+    environment:
+      DB_HOST: postgres
+      DB_USER: pgusername
+      DB_PASSWORD: pgpassword
+      DB_NAME: appdb
+    depends_on:
+      - postgres
+  
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: pgusername
+      POSTGRES_PASSWORD: pgpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
+
+

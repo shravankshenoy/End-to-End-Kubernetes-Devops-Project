@@ -1,0 +1,35 @@
+version: '2'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: pgusername
+      POSTGRES_PASSWORD: pgpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  user_service:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      REDIS_HOST: redis
+      DB_HOST: postgres
+      DB_USER: pgusername
+      DB_PASSWORD: pgpassword
+      DB_NAME: appdb
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  pgdata:

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      initContainers:
+        - name: init-order-db
+          image: postgres:15
+          command: ['sh', '-c', 'psql -h postgres-0.postgres -U user -d appdb -f /docker-entrypoint-initdb.d/init.sql']
+          env:
+            - name: PGPASSWORD
+              value: "password"
+          volumeMounts:
+            - name: schema-volume
+              mountPath: /docker-entrypoint-initdb.d
+      containers:
+        - name: order-service
+          image: ksshr/order-service
+          ports:
+            - containerPort: 5002
+          env:
+            - name: USER_SERVICE_URL
+              value: "http://user-service"
+            - name: DB_HOST
+              value: "postgres-0.postgres"
+            - name: DB_USER
+              value: "user"
+            - name: DB_PASSWORD
+              value: "password"
+            - name: DB_NAME
+              value: "appdb"
+      volumes:
+        - name: schema-volume
+          configMap:
+            name: order-schema
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - port: 80
+      targetPort: 5002
